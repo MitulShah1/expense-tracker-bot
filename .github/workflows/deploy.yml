@@ -22,6 +22,102 @@ env:
 jobs:
   test:
     name: Run Tests
+    strategy:
+      matrix:
+        go-version: [1.22.x, 1.23.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: expense_tracker_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Verify Go version
+      run: go version
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v ./...
+      env:
+        DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
+
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+
+    - name: Build application
+      run: go build -o expense-tracker-bot ./cmd
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: expense-tracker-bot-${{ matrix.go-version }}-${{ matrix.os }}
+        path: expense-tracker-bot
+
+  test-race:
+    name: Race Detection Tests
+    strategy:
+      matrix:
+        go-version: [1.22.x, 1.23.x]
+
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: expense_tracker_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run tests with race detection
+      run: go test -race -v ./...
+      env:
+        DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
+
+  coverage:
+    name: Code Coverage
     runs-on: ubuntu-latest
     
     services:
@@ -45,34 +141,31 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.21'
+        go-version: '1.23.x'
 
     - name: Install dependencies
       run: go mod download
 
-    - name: Run tests
-      run: go test -v ./...
+    - name: Run tests with coverage
+      run: go test -coverprofile=coverage.out -covermode=atomic ./...
       env:
         DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
 
-    - name: Run linter
-      uses: golangci/golangci-lint-action@v4
-      with:
-        version: latest
+    - name: Show coverage
+      run: go tool cover -func=coverage.out
 
-    - name: Build application
-      run: go build -o expense-tracker-bot ./cmd
-
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
       with:
-        name: expense-tracker-bot
-        path: expense-tracker-bot
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
 
   deploy:
     name: Deploy to Fly.io
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, test-race, coverage]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
 
     steps:
@@ -82,7 +175,7 @@ jobs:
     - name: Download build artifact
       uses: actions/download-artifact@v4
       with:
-        name: expense-tracker-bot
+        name: expense-tracker-bot-1.23.x-ubuntu-latest
         path: .
 
     - name: Set up Flyctl
