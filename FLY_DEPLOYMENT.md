@@ -73,18 +73,38 @@ fly secrets set IS_DEV_MODE=false
 # Deploy manually (for testing)
 fly deploy
 
-# Or push to main branch to trigger CI/CD
-git push origin main
+# Or use GitHub Actions for manual deployment
+# Go to Actions tab in your GitHub repository and run the workflow manually
 ```
 
 ## 🔄 CI/CD Pipeline
 
-The GitHub Actions workflow will:
+The GitHub Actions workflow provides:
 
-1. **Run Tests**: Execute all Go tests with PostgreSQL
-2. **Lint Code**: Run golangci-lint
-3. **Deploy**: Deploy to Fly.io if tests pass
-4. **Health Check**: Verify deployment success
+### Automatic (on every push/PR):
+1. **🧪 Run Tests**: Execute all Go tests with PostgreSQL
+2. **🔍 Lint Code**: Run golangci-lint for code quality
+3. **🏗️ Build Application**: Compile the application
+4. **📦 Upload Artifacts**: Store build artifacts for deployment
+
+### Manual Deployment:
+1. **🚀 Deploy**: Manual trigger to deploy to Fly.io
+2. **✅ Health Check**: Verify deployment success
+3. **📊 Notifications**: Deployment status and URLs
+
+### How to Deploy Manually:
+
+1. **Go to GitHub Repository** → **Actions** tab
+2. **Select "CI/CD Pipeline"** workflow
+3. **Click "Run workflow"** button
+4. **Select "true"** for the deploy option
+5. **Click "Run workflow"** to start deployment
+
+This ensures that:
+- ✅ Tests and linting run automatically on every change
+- ✅ Deployment is controlled and intentional
+- ✅ You can review changes before deploying
+- ✅ Rollback is easier with manual control
 
 ## 📊 Monitoring
 
