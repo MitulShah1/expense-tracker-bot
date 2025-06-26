@@ -57,13 +57,13 @@ run:
 # Run tests
 .PHONY: test
 test:
-	@echo "$(EMOJI_TEST) Running tests..."
+	@echo "$(EMOJI_TEST) Running tests with race detection..."
 	$(GOTEST) -v -race ./...
 
 # Run tests silently (for production/CI environments)
 .PHONY: test-silent
 test-silent:
-	@echo "$(EMOJI_TEST) Running tests silently..."
+	@echo "$(EMOJI_TEST) Running tests silently with race detection..."
 	$(GOTEST) -race ./...
 
 # Run tests with coverage

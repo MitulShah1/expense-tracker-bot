@@ -58,7 +58,7 @@ jobs:
     - name: Install dependencies
       run: go mod download
 
-    - name: Run tests
+    - name: Run tests with race detection
       run: make test-silent
       env:
         DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
@@ -76,45 +76,6 @@ jobs:
       with:
         name: expense-tracker-bot-${{ matrix.go-version }}-${{ matrix.os }}
         path: expense-tracker-bot
-
-  test-race:
-    name: Race Detection Tests
-    strategy:
-      matrix:
-        go-version: [1.22.x, 1.23.x]
-
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: expense_tracker_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
-
-    - name: Install dependencies
-      run: go mod download
-
-    - name: Run tests with race detection
-      run: go test -race ./...
-      env:
-        DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
 
   coverage:
     name: Code Coverage
@@ -165,7 +126,7 @@ jobs:
   deploy:
     name: Deploy to Fly.io
     runs-on: ubuntu-latest
-    needs: [test, test-race, coverage]
+    needs: [test, coverage]
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'true'
 
     steps:
