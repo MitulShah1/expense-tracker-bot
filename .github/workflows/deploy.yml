@@ -28,20 +28,6 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     
     runs-on: ${{ matrix.os }}
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: expense_tracker_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
     - name: Checkout code
@@ -60,8 +46,6 @@ jobs:
 
     - name: Run tests with race detection
       run: make test-silent
-      env:
-        DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
 
     - name: Run linter
       uses: golangci/golangci-lint-action@v4
@@ -80,20 +64,6 @@ jobs:
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: expense_tracker_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
     - name: Checkout code
@@ -109,8 +79,6 @@ jobs:
 
     - name: Run tests with coverage
       run: go test -coverprofile=coverage.out -covermode=atomic ./...
-      env:
-        DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
 
     - name: Show coverage
       run: go tool cover -func=coverage.out
