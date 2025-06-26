@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-blue.svg)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mituls/expense-tracker-bot)](https://goreportcard.com/report/github.com/mituls/expense-tracker-bot)
+[![Go Report Card](https://goreportcard.com/badge/github.com/MitulShah1/expense-tracker-bot)](https://goreportcard.com/report/github.com/MitulShah1/expense-tracker-bot)
 
 > A robust, enterprise-grade Telegram bot for tracking personal expenses with
 > PostgreSQL backend, built with Go. Features comprehensive expense management,

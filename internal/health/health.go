@@ -1,3 +1,5 @@
+// Package health provides health check functionality for the expense tracker bot.
+// It includes HTTP endpoints for health status, metrics, and database connectivity checks.
 package health
 
 import (
@@ -101,7 +103,12 @@ func (h *HealthChecker) healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		if h.logger != nil {
+			h.logger.Error(ctx, "Failed to encode health status", logger.ErrorField(err))
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 // rootHandler handles root requests
