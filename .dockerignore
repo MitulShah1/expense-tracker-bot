@@ -1,0 +1,63 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+SETUP_GUIDE.md
+docs/
+*.md
+
+# Development files
+.env
+.env.example
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test files
+*_test.go
+coverage.out
+
+# Build artifacts
+expense-tracker-bot
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Node modules (if any)
+node_modules/
+package*.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Scripts (keep only necessary ones)
+scripts/test_bot.sh
+scripts/test_data.md 

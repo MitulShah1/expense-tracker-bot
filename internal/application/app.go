@@ -5,21 +5,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/MitulShah1/expense-tracker-bot/internal/bot"
 	"github.com/MitulShah1/expense-tracker-bot/internal/config"
 	"github.com/MitulShah1/expense-tracker-bot/internal/database"
+	"github.com/MitulShah1/expense-tracker-bot/internal/health"
 	"github.com/MitulShah1/expense-tracker-bot/internal/logger"
 )
 
 // App represents the main application
-// It holds configuration, logger, database, and bot dependencies.
+// It holds configuration, logger, database, bot dependencies, and health checker.
 type App struct {
-	config   *config.Config
-	logger   logger.Logger
-	database database.Storage
-	bot      *bot.Bot
+	config        *config.Config
+	logger        logger.Logger
+	database      database.Storage
+	bot           *bot.Bot
+	healthChecker *health.HealthChecker
 }
 
 // NewApp creates a new application instance
@@ -62,6 +65,10 @@ func (a *App) Initialize(ctx context.Context) error {
 	}
 	a.bot = botInstance
 
+	// Initialize health checker
+	healthChecker := health.NewHealthChecker(dbStorage, loggerLog)
+	a.healthChecker = healthChecker
+
 	return nil
 }
 
@@ -74,6 +81,17 @@ func (a *App) Start(ctx context.Context) error {
 	// Check if bot is initialized
 	if a.bot == nil {
 		return errors.New("bot stopped with error: bot not initialized")
+	}
+
+	// Start health checker
+	if a.healthChecker != nil {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		if err := a.healthChecker.Start(ctx, port); err != nil {
+			return fmt.Errorf("failed to start health checker: %w", err)
+		}
 	}
 
 	// Start bot
@@ -89,6 +107,16 @@ func (a *App) Stop(ctx context.Context) error {
 	if a.logger != nil {
 		a.logger.Info(ctx, "Stopping expense tracker bot application")
 	}
+
+	// Stop health checker
+	if a.healthChecker != nil {
+		if err := a.healthChecker.Stop(ctx); err != nil {
+			if a.logger != nil {
+				a.logger.Error(ctx, "Failed to stop health checker", logger.ErrorField(err))
+			}
+		}
+	}
+
 	// Close database connection
 	if a.database != nil {
 		if err := a.database.Close(); err != nil {
