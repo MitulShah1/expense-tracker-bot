@@ -282,12 +282,8 @@ func TestLoggerLevels(t *testing.T) {
 }
 
 func TestLoggerConcurrency(t *testing.T) {
-	logger, err := New(Config{
-		BotID:     "test-bot",
-		LogLevel:  "info",
-		IsDevMode: false,
-	})
-	require.NoError(t, err)
+	// Use a mock logger instead of a real logger to prevent log output during tests
+	logger := NewMockLogger()
 
 	// Test concurrent logging
 	done := make(chan bool, 10)

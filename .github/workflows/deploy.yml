@@ -59,7 +59,7 @@ jobs:
       run: go mod download
 
     - name: Run tests
-      run: go test -v ./...
+      run: make test-silent
       env:
         DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
 
@@ -112,7 +112,7 @@ jobs:
       run: go mod download
 
     - name: Run tests with race detection
-      run: go test -race -v ./...
+      run: go test -race ./...
       env:
         DATABASE_URL: postgres://postgres:password@localhost:5432/expense_tracker_test?sslmode=disable
 

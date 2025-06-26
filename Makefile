@@ -60,6 +60,12 @@ test:
 	@echo "$(EMOJI_TEST) Running tests..."
 	$(GOTEST) -v -race ./...
 
+# Run tests silently (for production/CI environments)
+.PHONY: test-silent
+test-silent:
+	@echo "$(EMOJI_TEST) Running tests silently..."
+	$(GOTEST) -race ./...
+
 # Run tests with coverage
 .PHONY: test-coverage
 test-coverage:
@@ -110,6 +116,7 @@ help:
 	@echo ""
 	@echo "$(EMOJI_TEST) Test commands:"
 	@echo "  make test         - Run tests"
+	@echo "  make test-silent  - Run tests silently (for production/CI)"
 	@echo "  make test-coverage - Run tests with coverage"
 	@echo ""
 	@echo "$(EMOJI_LINT) Quality commands:"
