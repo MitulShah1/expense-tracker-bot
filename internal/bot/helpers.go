@@ -94,11 +94,19 @@ func (b *Bot) buildExpenseListMessage(expenses []*models.Expense) string {
 		categoryExpenses[expense.CategoryName] = append(categoryExpenses[expense.CategoryName], expense)
 	}
 
+	// Sort categories for consistent ordering
+	var categories []string
+	for category := range categoryExpenses {
+		categories = append(categories, category)
+	}
+	sort.Strings(categories)
+
 	// Build message
 	var sb strings.Builder
 	sb.WriteString("Your expenses:\n\n")
 
-	for category, categoryExpenses := range categoryExpenses {
+	for _, category := range categories {
+		categoryExpenses := categoryExpenses[category]
 		sb.WriteString(fmt.Sprintf("📊 %s:\n", category))
 		var prices []float64
 		for _, expense := range categoryExpenses {
