@@ -95,7 +95,7 @@ func (b *Bot) buildExpenseListMessage(expenses []*models.Expense) string {
 	}
 
 	// Sort categories for consistent ordering
-	var categories []string
+	categories := make([]string, 0, len(categoryExpenses))
 	for category := range categoryExpenses {
 		categories = append(categories, category)
 	}
