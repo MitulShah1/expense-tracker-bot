@@ -47,10 +47,11 @@ jobs:
     - name: Run tests with race detection
       run: make test-silent
 
-    - name: Run linter
-      uses: golangci/golangci-lint-action@v4
+    - name: Run golangci-lint (v2)
+      uses: golangci/golangci-lint-action@v8
       with:
-        version: latest
+        version: v2.1.0
+        args: --verbose  
 
     - name: Build application
       run: go build -o expense-tracker-bot ./cmd
