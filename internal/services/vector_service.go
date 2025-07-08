@@ -12,6 +12,14 @@ import (
 	"github.com/MitulShah1/expense-tracker-bot/internal/models"
 )
 
+// VectorServiceInterface defines the interface for vector service operations
+type VectorServiceInterface interface {
+	SearchExpensesByQuery(ctx context.Context, telegramID int64, query string, similarityThreshold float32, limit int) ([]*models.Expense, error)
+	FindSimilarExpenses(ctx context.Context, expenseID int64, similarityThreshold float32, limit int) ([]*models.Expense, error)
+	UpdateExpenseEmbeddings(ctx context.Context, expenseID int64) error
+	BatchUpdateEmbeddings(ctx context.Context, telegramID int64) error
+}
+
 // VectorService provides vector-based search and embedding functionality
 type VectorService struct {
 	db     database.Storage
@@ -83,11 +91,18 @@ func (s *VectorService) UpdateExpenseEmbeddings(ctx context.Context, expenseID i
 	// Generate embeddings for notes and category
 	var notesEmbedding, categoryEmbedding []float32
 
+	// Generate notes embedding only if notes exist
 	if expense.Notes != "" {
 		notesEmbedding, err = s.generateEmbedding(ctx, expense.Notes)
 		if err != nil {
 			s.logger.Error(ctx, "Failed to generate notes embedding", logger.ErrorField(err))
 			return errors.NewInternalError("Failed to generate notes embedding", err)
+		}
+		// Ensure we have a valid embedding
+		if len(notesEmbedding) == 0 {
+			s.logger.Warn(ctx, "Generated notes embedding is empty, skipping notes embedding update",
+				logger.Int("expense_id", int(expenseID)))
+			notesEmbedding = nil
 		}
 	}
 
@@ -99,6 +114,13 @@ func (s *VectorService) UpdateExpenseEmbeddings(ctx context.Context, expenseID i
 		return errors.NewInternalError("Failed to generate category embedding", err)
 	}
 
+	// Ensure we have a valid category embedding
+	if len(categoryEmbedding) == 0 {
+		s.logger.Error(ctx, "Generated category embedding is empty",
+			logger.Int("expense_id", int(expenseID)))
+		return errors.NewInternalError("Failed to generate category embedding", errorsstd.New("empty category embedding generated"))
+	}
+
 	// Update embeddings in database
 	err = s.db.UpdateExpenseEmbedding(ctx, expenseID, notesEmbedding, categoryEmbedding)
 	if err != nil {
@@ -107,7 +129,8 @@ func (s *VectorService) UpdateExpenseEmbeddings(ctx context.Context, expenseID i
 	}
 
 	s.logger.Info(ctx, "Expense embeddings updated successfully",
-		logger.Int("expense_id", int(expenseID)))
+		logger.Int("expense_id", int(expenseID)),
+		logger.Bool("has_notes_embedding", notesEmbedding != nil))
 
 	return nil
 }

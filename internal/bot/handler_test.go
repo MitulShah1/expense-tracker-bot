@@ -5,20 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MitulShah1/expense-tracker-bot/internal/database"
 	"github.com/MitulShah1/expense-tracker-bot/internal/logger"
 	"github.com/MitulShah1/expense-tracker-bot/internal/models"
+	"github.com/MitulShah1/expense-tracker-bot/internal/services"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-// VectorServiceInterface defines the interface for vector service operations
-type VectorServiceInterface interface {
-	SearchExpensesByQuery(ctx context.Context, userID int64, query string, similarityThreshold float32, limit int) ([]*models.Expense, error)
-	GenerateEmbedding(text string) ([]float32, error)
-	UpdateExpenseEmbeddings(ctx context.Context, expenseID int64, notes, categoryName string) error
-}
 
 // MockStorage is a mock implementation of database.Storage
 type MockStorage struct {
@@ -173,17 +168,66 @@ func (m *MockVectorService) SearchExpensesByQuery(ctx context.Context, userID in
 	return args.Get(0).([]*models.Expense), args.Error(1)
 }
 
-func (m *MockVectorService) GenerateEmbedding(text string) ([]float32, error) {
-	args := m.Called(text)
+func (m *MockVectorService) FindSimilarExpenses(ctx context.Context, expenseID int64, similarityThreshold float32, limit int) ([]*models.Expense, error) {
+	args := m.Called(ctx, expenseID, similarityThreshold, limit)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]float32), args.Error(1)
+	return args.Get(0).([]*models.Expense), args.Error(1)
 }
 
-func (m *MockVectorService) UpdateExpenseEmbeddings(ctx context.Context, expenseID int64, notes, categoryName string) error {
-	args := m.Called(ctx, expenseID, notes, categoryName)
+func (m *MockVectorService) UpdateExpenseEmbeddings(ctx context.Context, expenseID int64) error {
+	args := m.Called(ctx, expenseID)
 	return args.Error(0)
+}
+
+func (m *MockVectorService) BatchUpdateEmbeddings(ctx context.Context, telegramID int64) error {
+	args := m.Called(ctx, telegramID)
+	return args.Error(0)
+}
+
+// MockExpenseService is a mock implementation that embeds the real service
+type MockExpenseService struct {
+	*services.ExpenseService
+	mock.Mock
+}
+
+func NewMockExpenseService(db database.Storage, logger logger.Logger) *services.ExpenseService {
+	return services.NewExpenseService(db, logger)
+}
+
+func (m *MockExpenseService) GetExpensesByTelegramID(ctx context.Context, telegramID int64, limit, offset int) ([]*models.Expense, error) {
+	args := m.Called(ctx, telegramID, limit, offset)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.Expense), args.Error(1)
+}
+
+func (m *MockExpenseService) GetExpenseByID(ctx context.Context, expenseID int64) (*models.Expense, error) {
+	args := m.Called(ctx, expenseID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Expense), args.Error(1)
+}
+
+// MockBotAPI mocks the tgbotapi.BotAPI for testing
+// Only implements the Send method needed for handler tests
+// All other methods can panic if called
+type MockBotAPI struct {
+	mock.Mock
+}
+
+func (m *MockBotAPI) Send(c tgbotapi.Chattable) (tgbotapi.Message, error) {
+	m.Called(c)
+	return tgbotapi.Message{}, nil
+}
+
+func (m *MockBotAPI) GetUpdatesChan(u tgbotapi.UpdateConfig) tgbotapi.UpdatesChannel {
+	ch := make(chan tgbotapi.Update)
+	close(ch)
+	return ch
 }
 
 func TestBot_handleSearchCommand(t *testing.T) {
@@ -223,11 +267,15 @@ func TestBot_handleSearchCommand(t *testing.T) {
 			// Create a mock logger
 			mockLogger := &logger.MockLogger{}
 
-			// Create bot instance without setting vectorService to avoid type issues
+			mockAPI := &MockBotAPI{}
+			mockAPI.On("Send", mock.Anything).Return(tgbotapi.Message{}, nil)
 			bot := &Bot{
-				db:     mockDB,
-				logger: mockLogger,
-				states: make(map[int64]*models.UserState),
+				db:             mockDB,
+				logger:         mockLogger,
+				states:         make(map[int64]*models.UserState),
+				expenseService: NewMockExpenseService(mockDB, mockLogger),
+				vectorService:  mockVector,
+				api:            mockAPI,
 			}
 
 			// Create a mock message
@@ -264,10 +312,7 @@ func TestBot_handleSearchQuery(t *testing.T) {
 			userID: 12345,
 			query:  "petrol",
 			setupMock: func(mockDB *MockStorage, mockVector *MockVectorService) {
-				expenses := []*models.Expense{
-					{ID: 1, TotalPrice: 100.0, CategoryName: "⛽ Petrol", Notes: "fuel", Timestamp: time.Now()},
-				}
-				mockVector.On("SearchExpensesByQuery", mock.Anything, int64(12345), "petrol", float32(0.1), 10).Return(expenses, nil)
+				mockVector.On("SearchExpensesByQuery", mock.Anything, int64(12345), "petrol", float32(0.1), 10).Return([]*models.Expense{{ID: 1, TotalPrice: 100.0, CategoryName: "⛽ Petrol", Notes: "fuel", Timestamp: time.Now()}}, nil)
 			},
 			expectError: false,
 		},
@@ -295,26 +340,30 @@ func TestBot_handleSearchQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockDB := &MockStorage{}
 			mockVector := &MockVectorService{}
-			tt.setupMock(mockDB, mockVector)
-
-			// Create a mock logger
 			mockLogger := &logger.MockLogger{}
+			mockAPI := &MockBotAPI{}
+			mockAPI.On("Send", mock.Anything).Return(tgbotapi.Message{}, nil)
 
-			// Create bot instance without setting vectorService to avoid type issues
-			bot := &Bot{
-				db:     mockDB,
-				logger: mockLogger,
-				states: make(map[int64]*models.UserState),
+			// Set up the vectorService mock expectation for this test
+			if tt.query != "" {
+				mockVector.On("SearchExpensesByQuery", mock.Anything, tt.userID, tt.query, float32(0.1), 10).Return([]*models.Expense{{ID: 1, TotalPrice: 100.0, CategoryName: "⛽ Petrol", Notes: "fuel", Timestamp: time.Now()}}, nil)
 			}
 
-			// Create a mock message
+			bot := &Bot{
+				db:             mockDB,
+				logger:         mockLogger,
+				states:         make(map[int64]*models.UserState),
+				expenseService: NewMockExpenseService(mockDB, mockLogger),
+				vectorService:  mockVector,
+				api:            mockAPI,
+			}
+
 			message := &tgbotapi.Message{
 				Chat: &tgbotapi.Chat{ID: tt.userID},
 				From: &tgbotapi.User{ID: tt.userID},
 				Text: tt.query,
 			}
 
-			// Test the method
 			err := bot.handleSearchQuery(context.Background(), message)
 
 			if tt.expectError {
@@ -325,6 +374,7 @@ func TestBot_handleSearchQuery(t *testing.T) {
 
 			mockDB.AssertExpectations(t)
 			mockVector.AssertExpectations(t)
+			mockAPI.AssertExpectations(t)
 		})
 	}
 }
@@ -366,10 +416,13 @@ func TestBot_handleListCommand(t *testing.T) {
 			// Create a mock logger
 			mockLogger := &logger.MockLogger{}
 
-			// Create bot instance
+			mockAPI := &MockBotAPI{}
+			mockAPI.On("Send", mock.Anything).Return(tgbotapi.Message{}, nil)
 			bot := &Bot{
-				db:     mockDB,
-				logger: mockLogger,
+				db:             mockDB,
+				logger:         mockLogger,
+				expenseService: NewMockExpenseService(mockDB, mockLogger),
+				api:            mockAPI,
 			}
 
 			// Create a mock message

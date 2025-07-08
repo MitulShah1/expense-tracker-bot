@@ -175,10 +175,15 @@ func TestExpenseService_CreateExpense(t *testing.T) {
 			setupMock: func(mockDB *MockStorage) {
 				user := &models.User{ID: 1, TelegramID: 12345}
 				category := &models.Category{ID: 1, Name: "⛽ Petrol", Group: "Vehicle"}
+				expenseRecord := &models.Expense{ID: 1, UserID: 1, TotalPrice: 100.0, CategoryName: "⛽ Petrol", Notes: "Test expense"}
 
 				mockDB.On("GetUserByTelegramID", mock.Anything, int64(12345)).Return(user, nil)
 				mockDB.On("GetCategoryByName", mock.Anything, "⛽ Petrol").Return(category, nil)
 				mockDB.On("CreateExpense", mock.Anything, mock.AnythingOfType("*models.Expense")).Return(nil)
+				// General mock for all GetExpenseByID calls
+				mockDB.On("GetExpenseByID", mock.Anything, mock.AnythingOfType("int64")).Return(expenseRecord, nil)
+				// Mock UpdateExpenseEmbedding
+				mockDB.On("UpdateExpenseEmbedding", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("[]float32"), mock.AnythingOfType("[]float32")).Return(nil)
 			},
 			expectError: false,
 		},

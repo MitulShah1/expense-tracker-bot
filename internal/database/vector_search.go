@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	errors "errors"
 	"fmt"
 	"time"
 
@@ -27,6 +28,11 @@ type ExpenseEmbedding struct {
 // SearchExpensesBySimilarity searches for expenses using semantic similarity
 func (c *Client) SearchExpensesBySimilarity(ctx context.Context, userID int64, queryEmbedding []float32, similarityThreshold float32, limit int) ([]*models.Expense, error) {
 	var expenses []*models.Expense
+
+	// Validate query embedding
+	if len(queryEmbedding) == 0 {
+		return nil, errors.New("invalid query embedding: cannot be nil or empty")
+	}
 
 	// Convert []float32 to string representation for PostgreSQL vector
 	embeddingStr := fmt.Sprintf("[%f", queryEmbedding[0])
@@ -96,22 +102,26 @@ func (c *Client) FindSimilarExpenses(ctx context.Context, expenseID int64, simil
 // UpdateExpenseEmbedding updates the vector embeddings for an expense
 func (c *Client) UpdateExpenseEmbedding(ctx context.Context, expenseID int64, notesEmbedding, categoryEmbedding []float32) error {
 	// Convert []float32 to string representation for PostgreSQL vector
-	var notesEmbeddingStr, categoryEmbeddingStr string
+	var notesEmbeddingStr, categoryEmbeddingStr any
 
-	if notesEmbedding != nil {
+	if len(notesEmbedding) > 0 {
 		notesEmbeddingStr = fmt.Sprintf("[%f", notesEmbedding[0])
 		for i := 1; i < len(notesEmbedding); i++ {
-			notesEmbeddingStr += fmt.Sprintf(",%f", notesEmbedding[i])
+			notesEmbeddingStr = fmt.Sprintf("%s,%f", notesEmbeddingStr, notesEmbedding[i])
 		}
-		notesEmbeddingStr += "]"
+		notesEmbeddingStr = fmt.Sprintf("%s]", notesEmbeddingStr)
+	} else {
+		notesEmbeddingStr = nil
 	}
 
-	if categoryEmbedding != nil {
+	if len(categoryEmbedding) > 0 {
 		categoryEmbeddingStr = fmt.Sprintf("[%f", categoryEmbedding[0])
 		for i := 1; i < len(categoryEmbedding); i++ {
-			categoryEmbeddingStr += fmt.Sprintf(",%f", categoryEmbedding[i])
+			categoryEmbeddingStr = fmt.Sprintf("%s,%f", categoryEmbeddingStr, categoryEmbedding[i])
 		}
-		categoryEmbeddingStr += "]"
+		categoryEmbeddingStr = fmt.Sprintf("%s]", categoryEmbeddingStr)
+	} else {
+		categoryEmbeddingStr = nil
 	}
 
 	query := `

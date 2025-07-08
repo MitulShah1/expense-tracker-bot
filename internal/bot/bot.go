@@ -19,16 +19,23 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// BotAPIInterface defines the methods used from tgbotapi.BotAPI
+// This allows us to mock the API in tests
+type BotAPIInterface interface {
+	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
+	GetUpdatesChan(u tgbotapi.UpdateConfig) tgbotapi.UpdatesChannel
+}
+
 // Bot represents the Telegram bot
 type Bot struct {
-	api    *tgbotapi.BotAPI
+	api    BotAPIInterface
 	db     database.Storage
 	logger logger.Logger
 	// Services
 	expenseService  *services.ExpenseService
 	categoryService *services.CategoryService
 	userService     *services.UserService
-	vectorService   *services.VectorService
+	vectorService   services.VectorServiceInterface
 	states          map[int64]*models.UserState
 	// Add new fields for state management
 	stateTimeout  time.Duration
@@ -62,7 +69,7 @@ func NewBot(ctx context.Context, token string, dbClient database.Storage, logger
 	vectorService := services.NewVectorService(dbClient, logger)
 
 	bot := &Bot{
-		api:             api,
+		api:             api, // Use the real API here
 		db:              dbClient,
 		logger:          logger,
 		expenseService:  expenseService,
