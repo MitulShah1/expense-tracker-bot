@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	errorsstd "errors"
+	stderrors "errors"
 	"fmt"
 	"strings"
 
 	"github.com/MitulShah1/expense-tracker-bot/internal/database"
-	errors "github.com/MitulShah1/expense-tracker-bot/internal/errors"
+	"github.com/MitulShah1/expense-tracker-bot/internal/errors"
 	"github.com/MitulShah1/expense-tracker-bot/internal/logger"
 	"github.com/MitulShah1/expense-tracker-bot/internal/models"
 )
@@ -118,7 +118,7 @@ func (s *VectorService) UpdateExpenseEmbeddings(ctx context.Context, expenseID i
 	if len(categoryEmbedding) == 0 {
 		s.logger.Error(ctx, "Generated category embedding is empty",
 			logger.Int("expense_id", int(expenseID)))
-		return errors.NewInternalError("Failed to generate category embedding", errorsstd.New("empty category embedding generated"))
+		return errors.NewInternalError("Failed to generate category embedding", stderrors.New("empty category embedding generated"))
 	}
 
 	// Update embeddings in database
@@ -201,7 +201,7 @@ func (s *VectorService) generateEmbedding(ctx context.Context, text string) ([]f
 	// Normalize text
 	text = strings.TrimSpace(text)
 	if text == "" {
-		return nil, errorsstd.New("empty text provided for embedding")
+		return nil, stderrors.New("empty text provided for embedding")
 	}
 
 	// This is a simplified placeholder implementation

@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	errors "errors"
+	"errors"
 	"fmt"
 	"time"
 
