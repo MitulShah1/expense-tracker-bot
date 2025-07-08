@@ -276,6 +276,83 @@ func (m *MockStorage) GetExpensesByDateRange(ctx context.Context, userID int64, 
 	return result, nil
 }
 
+// VectorSearchStorage Operations
+
+// SearchExpensesBySimilarity searches for expenses using semantic similarity in mock storage
+func (m *MockStorage) SearchExpensesBySimilarity(ctx context.Context, userID int64, queryEmbedding []float32, similarityThreshold float32, limit int) ([]*models.Expense, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var result []*models.Expense
+	for _, expense := range m.expenses {
+		if expense.UserID == userID && expense.DeletedAt == nil {
+			result = append(result, expense)
+		}
+	}
+
+	// Mock implementation: return all expenses for the user
+	// In a real implementation, this would use vector similarity
+	if len(result) > limit {
+		result = result[:limit]
+	}
+	return result, nil
+}
+
+// FindSimilarExpenses finds expenses similar to a given expense in mock storage
+func (m *MockStorage) FindSimilarExpenses(ctx context.Context, expenseID int64, similarityThreshold float32, limit int) ([]*models.Expense, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Get the target expense
+	targetExpense, exists := m.expenses[expenseID]
+	if !exists || targetExpense.DeletedAt != nil {
+		return nil, sql.ErrNoRows
+	}
+
+	var result []*models.Expense
+	for _, expense := range m.expenses {
+		if expense.ID != expenseID && expense.UserID == targetExpense.UserID && expense.DeletedAt == nil {
+			result = append(result, expense)
+		}
+	}
+
+	// Mock implementation: return similar expenses
+	// In a real implementation, this would use vector similarity
+	if len(result) > limit {
+		result = result[:limit]
+	}
+	return result, nil
+}
+
+// UpdateExpenseEmbedding updates the vector embeddings for an expense in mock storage
+func (m *MockStorage) UpdateExpenseEmbedding(ctx context.Context, expenseID int64, notesEmbedding, categoryEmbedding []float32) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if expense, exists := m.expenses[expenseID]; exists && expense.DeletedAt == nil {
+		expense.UpdatedAt = time.Now()
+		return nil
+	}
+	return sql.ErrNoRows
+}
+
+// GetExpenseEmbedding retrieves the vector embeddings for an expense from mock storage
+func (m *MockStorage) GetExpenseEmbedding(ctx context.Context, expenseID int64) (*models.ExpenseEmbedding, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if expense, exists := m.expenses[expenseID]; exists && expense.DeletedAt == nil {
+		// Return a mock embedding
+		return &models.ExpenseEmbedding{
+			ID:                expense.ID,
+			NotesEmbedding:    []float32{0.1, 0.2, 0.3}, // Mock embedding
+			CategoryEmbedding: []float32{0.4, 0.5, 0.6}, // Mock embedding
+			UpdatedAt:         expense.UpdatedAt,
+		}, nil
+	}
+	return nil, sql.ErrNoRows
+}
+
 // Helper methods for testing
 
 // AddMockCategory adds a category to mock storage for testing

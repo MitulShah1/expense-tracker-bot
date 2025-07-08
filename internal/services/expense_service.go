@@ -118,6 +118,14 @@ func (s *ExpenseService) CreateExpense(ctx context.Context, expense *models.Expe
 		logger.Int("expense_id", int(expenseRecord.ID)),
 		logger.Float64("total_price", expense.TotalPrice))
 
+	// Generate embeddings for the new expense
+	vectorService := NewVectorService(s.db, s.logger)
+	if err := vectorService.UpdateExpenseEmbeddings(ctx, expenseRecord.ID); err != nil {
+		s.logger.Error(ctx, "Failed to generate embeddings for new expense", logger.ErrorField(err))
+		// Don't fail the expense creation if embedding generation fails
+		// The expense is still created successfully
+	}
+
 	return nil
 }
 

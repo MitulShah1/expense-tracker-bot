@@ -57,7 +57,7 @@ If you prefer step-by-step control:
 make deps
 
 # 2. Start database
-docker compose up -d postgres
+docker compose -f docker/docker-compose.yml up -d postgres
 
 # 3. Run database setup
 ./scripts/setup_database.sh
@@ -74,7 +74,7 @@ make run
 Before running any setup script, ensure you have:
 
 - **Go 1.21+** - [Download here](https://golang.org/dl/)
-- **Docker & Docker Compose** - [Install here](https://docs.docker.com/get-docker/)
+- **Docker & Docker Compose** - [Install here](https://docs.docker.com/get-docker/) (see docker/ directory)
 - **Git** - [Install here](https://git-scm.com/)
 
 ## ⚙️ Configuration
@@ -114,7 +114,7 @@ Once setup is complete:
 
 1. **Update your bot token**: Edit `.env` file and replace `your_telegram_bot_token_here`
 2. **Start the bot**: `./expense-tracker-bot` or `make run`
-3. **Test the bot**: Use `./scripts/test_bot.sh` to test functionality
+3. **Test the bot**: Run `./expense-tracker-bot` to start the bot and test functionality
 4. **Access pgAdmin**: Visit http://localhost:8080 (admin@expense-tracker.com / admin)
 
 ## 🔧 Available Scripts
@@ -124,7 +124,7 @@ Once setup is complete:
 | `./scripts/quick-start.sh` | One-command setup with confirmation | New users |
 | `./scripts/setup.sh` | Complete automated setup | Detailed setup info |
 | `./scripts/setup_database.sh` | Database-only setup | Database management |
-| `./scripts/test_bot.sh` | Interactive bot testing | Testing functionality |
+
 
 ## 🛠️ Troubleshooting
 
@@ -145,7 +145,7 @@ Once setup is complete:
 3. **Port Already in Use**
 
    ```bash
-   docker compose down
+   docker compose -f docker/docker-compose.yml down
    ./scripts/setup.sh
    ```
 
@@ -165,7 +165,7 @@ To completely reset and start fresh:
 
 ```bash
 # Stop and remove containers
-docker compose down -v
+docker compose -f docker/docker-compose.yml down -v
 
 # Remove build artifacts
 make clean
@@ -192,16 +192,16 @@ make clean
 
 ```bash
 # Start database
-docker compose up -d postgres
+docker compose -f docker/docker-compose.yml up -d postgres
 
 # Stop database
-docker compose down
+docker compose -f docker/docker-compose.yml down
 
 # View logs
-docker compose logs postgres
+docker compose -f docker/docker-compose.yml logs postgres
 
 # Reset database
-docker compose down -v && docker compose up -d postgres
+docker compose -f docker/docker-compose.yml down -v && docker compose -f docker/docker-compose.yml up -d postgres
 ```
 
 ## 🧪 Testing
@@ -254,7 +254,7 @@ For production deployment:
 If you encounter issues:
 
 1. Check the troubleshooting section above
-2. Review the logs: `docker compose logs postgres`
+2. Review the logs: `docker compose -f docker/docker-compose.yml logs postgres`
 3. Check the test data: `scripts/test_data.md`
 4. Create an issue on GitHub
 5. Review the documentation in the `docs/` directory

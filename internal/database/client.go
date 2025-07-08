@@ -29,6 +29,7 @@ type Storage interface {
 	UserStorage
 	CategoryStorage
 	ExpenseStorage
+	VectorSearchStorage
 
 	// Connection management
 	Close() error

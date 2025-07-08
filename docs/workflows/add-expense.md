@@ -70,4 +70,4 @@ graph TD
 
 - Invalid inputs trigger appropriate error messages
 - User can retry input or cancel operation
-- Rate limiting prevents abuse
+- Basic rate limiting prevents abuse

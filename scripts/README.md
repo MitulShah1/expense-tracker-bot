@@ -1,104 +1,53 @@
 # 📜 Scripts Directory
 
-This directory contains various setup and utility scripts for the Expense Tracker Bot.
+This directory contains the unified management script for the Expense Tracker Bot.
 
-## 🚀 Quick Start Scripts
+## 🚀 Main Management Script
 
-### `quick-start.sh` - One-Command Setup
+### `manage.sh` - Unified Setup & Management
 
-The easiest way to get started with the bot.
-
-```bash
-./scripts/quick-start.sh
-```
-
-**What it does:**
-
-- ✅ Checks all prerequisites (Go, Docker)
-- 📝 Creates and configures `.env` file
-- 🗄️ Starts PostgreSQL database
-- 🔧 Installs dependencies and runs migrations
-- 🏗️ Builds the application
-- 🧪 Runs tests
-- 🚀 Provides next steps
-
-**Best for:** New users who want the fastest setup experience.
-
-### `setup.sh` - Complete Setup
-
-Comprehensive setup script with detailed output.
+The single entry point for all setup and management tasks.
 
 ```bash
-./scripts/setup.sh
+./scripts/manage.sh [quick|full|db|help]
 ```
 
-**What it does:**
+**Commands:**
 
-- Everything from `quick-start.sh` plus:
-- 🔍 Detailed error checking
-- 📊 Database verification
-- 🛠️ Migration tool installation
-- 📋 Comprehensive status reporting
+- `quick` — One-command quick setup (recommended for new users)
+- `full` — Complete setup with detailed checks
+- `db` — Database-only setup/reset
+- `help` — Show usage instructions
 
-**Best for:** Users who want detailed setup information and troubleshooting.
+**Examples:**
 
-## 🗄️ Database Scripts
+- Quick start (recommended):
 
-### `setup_database.sh` - Database Only Setup
+  ```bash
+  ./scripts/manage.sh quick
+  ```
 
-Sets up only the database components.
+- Full setup with detailed checks:
 
-```bash
-./scripts/setup_database.sh
-```
+  ```bash
+  ./scripts/manage.sh full
+  ```
 
-**What it does:**
+- Database-only setup/reset:
 
-- 🗄️ Starts PostgreSQL container
-- 🔧 Installs migration tool
-- 📊 Runs database migrations
-- ✅ Verifies database setup
-- 📋 Shows database status
+  ```bash
+  ./scripts/manage.sh db
+  ```
 
-**Best for:** When you only need to set up or reset the database.
+- Show help:
 
-## 🧪 Testing Scripts
-
-### `test_bot.sh` - Bot Testing
-
-Interactive testing script for the bot.
-
-```bash
-./scripts/test_bot.sh
-```
-
-**What it does:**
-
-- 🏗️ Builds the bot
-- 🤖 Starts the bot in background
-- 📝 Provides test scenarios
-- 🛑 Graceful shutdown on Ctrl+C
-
-**Best for:** Testing bot functionality after setup.
-
-## 📋 Test Data
-
-### `test_data.md` - Sample Data
-
-Contains sample expense data for testing.
-
-**What it includes:**
-
-- 🚗 Vehicle expenses (petrol, service)
-- 🍽️ Food expenses (groceries, restaurants)
-- ⚡ Utility expenses (electricity, water)
-- 📊 Test scenarios and flows
-
-**Best for:** Manual testing and development.
+  ```bash
+  ./scripts/manage.sh help
+  ```
 
 ## 🔧 Using with Makefile
 
-You can also use these scripts through the Makefile:
+You can also use these scripts through the Makefile (update Makefile to use manage.sh):
 
 ```bash
 # Quick setup
@@ -130,8 +79,8 @@ make setup-db
 3. **Port Already in Use**
 
    ```bash
-   docker-compose down
-   ./scripts/setup.sh
+   docker-compose -f docker/docker-compose.yml down
+   ./scripts/manage.sh full
    ```
 
 4. **Migration Tool Not Found**
@@ -146,13 +95,13 @@ To completely reset and start fresh:
 
 ```bash
 # Stop and remove containers
-docker-compose down -v
+docker-compose -f docker/docker-compose.yml down -v
 
 # Remove build artifacts
 make clean
 
 # Run setup again
-./scripts/setup.sh
+./scripts/manage.sh full
 ```
 
 ## 📝 Script Dependencies
@@ -160,7 +109,7 @@ make clean
 All scripts require:
 
 - **Go 1.21+** - For building and running the application
-- **Docker & Docker Compose** - For PostgreSQL database
+- **Docker & Docker Compose** - For PostgreSQL database (see docker/ directory)
 - **Git** - For cloning the repository
 - **Bash** - For running the scripts
 

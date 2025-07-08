@@ -55,13 +55,13 @@ graph TD
 - Confirmation prompt
 - Success/failure messages
 - Error handling
-- Rate limiting
+- Basic rate limiting
 
 ## Error Handling
 
 - Invalid selection handling
 - Database error handling
-- Rate limit exceeded
+- Rate limit exceeded (basic protection)
 - Empty state handling
 
 ## Example Messages

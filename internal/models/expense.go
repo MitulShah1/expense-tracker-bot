@@ -3,6 +3,12 @@ package models
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -27,6 +33,8 @@ const (
 	StepEditNotes
 	StepDeleteExpense
 	StepConfirmDelete
+	StepSearchExpense
+	StepNone
 )
 
 // User represents a Telegram user
@@ -65,6 +73,12 @@ type Expense struct {
 	UpdatedAt   time.Time      `db:"updated_at"   json:"updatedAt"`
 	DeletedAt   *time.Time     `db:"deleted_at"   json:"deletedAt,omitempty"`
 
+	// Vector embeddings
+	NotesEmbedding    Float32Vector `db:"notes_embedding"    json:"notesEmbedding,omitempty"`
+	CategoryEmbedding Float32Vector `db:"category_embedding" json:"categoryEmbedding,omitempty"`
+
+	Similarity float64 `db:"similarity" json:"similarity,omitempty"`
+
 	// Joined fields from categories table
 	CategoryName  string `db:"category_name"  json:"categoryName"`
 	CategoryEmoji string `db:"category_emoji" json:"categoryEmoji"`
@@ -80,6 +94,14 @@ type ExpenseStats struct {
 	MaxExpense       float64   `db:"max_expense"        json:"maxExpense"`
 	FirstExpenseDate time.Time `db:"first_expense_date" json:"firstExpenseDate"`
 	LastExpenseDate  time.Time `db:"last_expense_date"  json:"lastExpenseDate"`
+}
+
+// ExpenseEmbedding represents the vector embeddings for an expense
+type ExpenseEmbedding struct {
+	ID                int64     `db:"id"`
+	NotesEmbedding    []float32 `db:"notes_embedding"`
+	CategoryEmbedding []float32 `db:"category_embedding"`
+	UpdatedAt         time.Time `db:"updated_at"`
 }
 
 // VehicleType represents the type of vehicle
@@ -284,3 +306,69 @@ const (
 	OperationEdit   Operation = "EDIT"
 	OperationDelete Operation = "DELETE"
 )
+
+// Float32Vector is a custom type for scanning/valuing Postgres vector columns
+// (pgvector stores as string like '[0.1,0.2,0.3]')
+type Float32Vector []float32
+
+// MarshalJSON for JSON encoding
+func (v *Float32Vector) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]float32(*v))
+}
+
+// UnmarshalJSON for JSON decoding
+func (v *Float32Vector) UnmarshalJSON(data []byte) error {
+	var arr []float32
+	if err := json.Unmarshal(data, &arr); err != nil {
+		return err
+	}
+	*v = arr
+	return nil
+}
+
+// Scan implements the sql.Scanner interface for Float32Vector
+func (v *Float32Vector) Scan(src any) error {
+	switch data := src.(type) {
+	case string:
+		return v.fromString(data)
+	case []byte:
+		return v.fromString(string(data))
+	case nil:
+		*v = nil
+		return nil
+	default:
+		return fmt.Errorf("cannot scan %T into Float32Vector", src)
+	}
+}
+
+// Value implements the driver.Valuer interface for Float32Vector
+func (v *Float32Vector) Value() (driver.Value, error) {
+	if v == nil {
+		return nil, errors.New("Float32Vector is nil")
+	}
+	parts := make([]string, len(*v))
+	for i, f := range *v {
+		parts[i] = strconv.FormatFloat(float64(f), 'f', -1, 32)
+	}
+	return "[" + strings.Join(parts, ",") + "]", nil
+}
+
+// fromString parses a pgvector string (e.g. '[0.1,0.2,0.3]')
+func (v *Float32Vector) fromString(s string) error {
+	s = strings.Trim(s, "[]")
+	if s == "" {
+		*v = Float32Vector{}
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	vec := make(Float32Vector, len(parts))
+	for i, p := range parts {
+		f, err := strconv.ParseFloat(strings.TrimSpace(p), 32)
+		if err != nil {
+			return err
+		}
+		vec[i] = float32(f)
+	}
+	*v = vec
+	return nil
+}

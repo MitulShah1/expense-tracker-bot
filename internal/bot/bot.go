@@ -28,6 +28,7 @@ type Bot struct {
 	expenseService  *services.ExpenseService
 	categoryService *services.CategoryService
 	userService     *services.UserService
+	vectorService   *services.VectorService
 	states          map[int64]*models.UserState
 	// Add new fields for state management
 	stateTimeout  time.Duration
@@ -58,6 +59,7 @@ func NewBot(ctx context.Context, token string, dbClient database.Storage, logger
 	expenseService := services.NewExpenseService(dbClient, logger)
 	categoryService := services.NewCategoryService(dbClient, logger)
 	userService := services.NewUserService(dbClient, logger)
+	vectorService := services.NewVectorService(dbClient, logger)
 
 	bot := &Bot{
 		api:             api,
@@ -66,6 +68,7 @@ func NewBot(ctx context.Context, token string, dbClient database.Storage, logger
 		expenseService:  expenseService,
 		categoryService: categoryService,
 		userService:     userService,
+		vectorService:   vectorService,
 		states:          make(map[int64]*models.UserState),
 		stateTimeout:    30 * time.Minute,                                      // Default timeout of 30 minutes
 		rateLimiter:     rate.NewLimiter(rate.Every(100*time.Millisecond), 10), // 10 requests per second
@@ -270,6 +273,8 @@ func (b *Bot) handleCommand(ctx context.Context, message *tgbotapi.Message) erro
 		return b.handleReportCommand(ctx, message)
 	case "dashboard":
 		return b.handleDashboardCommand(ctx, message)
+	case "search":
+		return b.handleSearchCommand(ctx, message)
 	case "cancel":
 		delete(b.states, message.Chat.ID)
 		return b.sendMessage(ctx, message.Chat.ID, "Operation cancelled.")
@@ -293,6 +298,11 @@ func (b *Bot) handleState(ctx context.Context, message *tgbotapi.Message, state 
 		return b.handleReportCommand(ctx, message)
 	case "📈 Dashboard":
 		return b.handleDashboardCommand(ctx, message)
+	}
+
+	// Add semantic search state handling
+	if state.Step == models.StepSearchExpense {
+		return b.handleSearchQuery(ctx, message)
 	}
 
 	switch state.Step {
@@ -492,6 +502,7 @@ func (b *Bot) sendHelp(ctx context.Context, message *tgbotapi.Message) error {
 /list - List your expenses
 /edit - Edit an existing expense
 /delete - Delete an expense
+/search - Search expenses using natural language
 /help - Show this help message
 /cancel - Cancel current operation
 
@@ -507,7 +518,12 @@ To add an expense:
 To edit or delete an expense:
 1. Use /edit or /delete
 2. Select the expense from the list
-3. Follow the prompts`
+3. Follow the prompts
+
+To search expenses:
+1. Use /search
+2. Enter a natural language query
+3. View matching expenses`
 	return b.sendMessage(ctx, message.Chat.ID, text)
 }
 

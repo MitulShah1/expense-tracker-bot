@@ -78,5 +78,5 @@ Grand Total: ₹5,700
 ## Error Handling
 
 - Database errors are caught and displayed
-- Rate limiting prevents abuse
+- Basic rate limiting prevents abuse
 - Empty state handling 

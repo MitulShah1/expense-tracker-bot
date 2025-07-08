@@ -89,11 +89,11 @@ graph TD
 - Validation for each input
 - Confirmation before saving
 - Error handling
-- Rate limiting
+- Basic rate limiting
 
 ## Error Handling
 
 - Invalid input detection
 - Database error handling
-- Rate limit exceeded
+- Rate limit exceeded (basic protection)
 - Invalid selection handling

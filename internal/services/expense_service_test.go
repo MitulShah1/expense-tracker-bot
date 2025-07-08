@@ -124,6 +124,36 @@ func (m *MockStorage) GetExpensesByUserID(ctx context.Context, userID int64) ([]
 	return args.Get(0).([]*models.Expense), args.Error(1)
 }
 
+// VectorSearchStorage stubs
+func (m *MockStorage) SearchExpensesBySimilarity(ctx context.Context, userID int64, queryEmbedding []float32, similarityThreshold float32, limit int) ([]*models.Expense, error) {
+	args := m.Called(ctx, userID, queryEmbedding, similarityThreshold, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.Expense), args.Error(1)
+}
+
+func (m *MockStorage) FindSimilarExpenses(ctx context.Context, expenseID int64, similarityThreshold float32, limit int) ([]*models.Expense, error) {
+	args := m.Called(ctx, expenseID, similarityThreshold, limit)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.Expense), args.Error(1)
+}
+
+func (m *MockStorage) UpdateExpenseEmbedding(ctx context.Context, expenseID int64, notesEmbedding, categoryEmbedding []float32) error {
+	args := m.Called(ctx, expenseID, notesEmbedding, categoryEmbedding)
+	return args.Error(0)
+}
+
+func (m *MockStorage) GetExpenseEmbedding(ctx context.Context, expenseID int64) (*models.ExpenseEmbedding, error) {
+	args := m.Called(ctx, expenseID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.ExpenseEmbedding), args.Error(1)
+}
+
 func TestExpenseService_CreateExpense(t *testing.T) {
 	tests := []struct {
 		name        string

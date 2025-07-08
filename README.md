@@ -27,12 +27,12 @@
 - **🛡️ Robust Error Handling**: Custom error types with proper error categorization
 - **✅ Input Validation**: Comprehensive validation for all user inputs
 - **🏗️ Service Layer Architecture**: Clean separation of business logic
-- **🔧 Middleware Support**: Cross-cutting concerns like logging, rate limiting, and metrics
+- **🔧 Logging & Monitoring**: Structured logging with context and basic metrics
 - **🧪 Comprehensive Testing**: Unit tests with mocking and test coverage
 - **📝 Structured Logging**: JSON logging with context and correlation IDs
 - **🗄️ Database Abstraction**: Interface-based database layer with PostgreSQL support
 - **⚙️ Configuration Management**: Environment-based configuration with validation
-- **🚦 Rate Limiting**: Built-in rate limiting to prevent abuse
+- **🚦 Basic Rate Limiting**: Simple rate limiting to prevent abuse
 - **📊 Metrics Collection**: Application metrics for monitoring
 
 ## 🏗️ Architecture
@@ -47,7 +47,7 @@
                                 │                       │
                                 ▼                       ▼
                        ┌─────────────────┐    ┌─────────────────┐
-                       │   Middleware    │    │   Validation    │
+                       │   Logging       │    │   Validation    │
                        │                 │    │                 │
                        └─────────────────┘    └─────────────────┘
                                 │                       │
@@ -151,7 +151,7 @@ chmod +x scripts/*.sh
 1. Start PostgreSQL using Docker Compose:
 
    ```bash
-   docker-compose up -d postgres
+   docker-compose -f docker/docker-compose.yml up -d postgres
    ```
 
 2. Run database migrations:
@@ -186,7 +186,7 @@ Once setup is complete:
 
 1. **Update your bot token**: Edit `.env` file and replace `your_telegram_bot_token_here` with your actual bot token
 2. **Start the bot**: `./expense-tracker-bot` or `make run`
-3. **Test the bot**: Use `./scripts/test_bot.sh` to test functionality
+3. **Test the bot**: Run `./expense-tracker-bot` to start the bot and test functionality
 4. **Access pgAdmin**: Visit http://localhost:8080 (admin@expense-tracker.com / admin)
 
 ### 🔧 Available Scripts
@@ -194,7 +194,7 @@ Once setup is complete:
 - `./scripts/quick-start.sh` - One-command setup with confirmation
 - `./scripts/setup.sh` - Complete automated setup
 - `./scripts/setup_database.sh` - Database-only setup
-- `./scripts/test_bot.sh` - Test the bot functionality
+
 
 ## 🧪 Testing
 
@@ -252,7 +252,7 @@ The application uses custom error types for better error categorization:
 - `DatabaseError`: Database operation errors
 - `TelegramError`: Telegram API errors
 - `UnauthorizedError`: Authorization errors
-- `RateLimitError`: Rate limiting errors
+- `RateLimitError`: Basic rate limiting errors
 
 ## 📊 Monitoring & Observability
 
@@ -284,7 +284,7 @@ Database connectivity and application health monitoring.
 
 - ✅ Comprehensive validation for all user inputs
 - 🛡️ SQL injection prevention through parameterized queries
-- 🚦 Rate limiting to prevent abuse
+- 🚦 Basic rate limiting to prevent abuse
 - 🔐 User authorization checks
 
 ### 🔐 Data Protection
@@ -297,12 +297,14 @@ Database connectivity and application health monitoring.
 
 ### 🐳 Docker Deployment
 
+To build and run the bot with Docker:
+
 ```bash
 # Build Docker image
-docker build -t expense-tracker-bot .
+docker build -t expense-tracker-bot -f docker/Dockerfile .
 
 # Run with Docker Compose
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### 🏭 Production Considerations

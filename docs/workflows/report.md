@@ -76,7 +76,7 @@ graph TD
 ## Error Handling
 
 - Database error handling
-- Rate limiting
+- Basic rate limiting
 - Empty state handling
 - Invalid data handling
 
@@ -92,7 +92,7 @@ graph TD
    ❌ Failed to generate report. Please try again.
    ```
 
-3. **Rate Limit**
+3. **Basic Rate Limit**
    ```
    Too many requests. Please try again later.
    ``` 
