@@ -27,20 +27,20 @@ all: fmt lint test build
 .PHONY: setup
 setup:
 	@echo "$(EMOJI_SETUP) Running complete setup..."
-	@chmod +x scripts/*.sh
-	@./scripts/setup.sh
+	@chmod +x scripts/manage.sh
+	@./scripts/manage.sh full
 
 .PHONY: setup-quick
 setup-quick:
 	@echo "$(EMOJI_SETUP) Running quick setup..."
-	@chmod +x scripts/*.sh
-	@./scripts/quick-start.sh
+	@chmod +x scripts/manage.sh
+	@./scripts/manage.sh quick
 
 .PHONY: setup-db
 setup-db:
 	@echo "$(EMOJI_SETUP) Setting up database..."
-	@chmod +x scripts/*.sh
-	@./scripts/setup_database.sh
+	@chmod +x scripts/manage.sh
+	@./scripts/manage.sh db
 
 # Build the application
 .PHONY: build
